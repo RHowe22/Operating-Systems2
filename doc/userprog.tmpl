@@ -40,6 +40,14 @@ Robert Howe		<rjhowe@buffalo.edu>
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
 
+strtok_r() is the reentrant version of strtok() which means that this 
+function can be called from multiple threads simultaneously. 
+strtok_r() takes an extra argument which is used to store state between calls 
+instead of using a global variable. (aka thread-safe)
+strtok() uses global states so if by any chance we call it from more than one
+thread, it might crash.
+
+
 >> A4: In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
