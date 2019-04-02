@@ -10,7 +10,7 @@
 
 Harshita Girase <hvgirase@buffalo.edu>
 Douglas Achkar 	<dachkar@buffalo.edu>
-Robert Howe		<rjhowe@buffalo.edu>
+Robert Howe	<rjhowe@buffalo.edu>
 
 ---- PRELIMINARIES ----
 
@@ -30,11 +30,26 @@ Robert Howe		<rjhowe@buffalo.edu>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+None
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
+
+- Process execute, call start process. Load process is called too.
+- Then we start tokenizing the file that is passed in by calling strtok_r() 
+on the file passed. We call it once initially and then create 
+an integer which indicates the number of arguments which we set that to 1 initially. 
+- Then we pass in the first token (left most argument) i.e. argv[0]. After the stack 
+is set up, we pass the current value of the token and decrement the size of stack 
+and continue to tokenize the rest of the string. 
+- As we are doing that, we will move the stack pointer along the argument till we 
+reach the end of the command line argument. 
+- Then, we check where the stack pointer is at that point. 
+- Pass in the address, argument count and the fake return address. 
+
 
 ---- RATIONALE ----
 
