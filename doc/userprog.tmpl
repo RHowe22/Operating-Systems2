@@ -135,6 +135,11 @@ in the user space than kernel space.
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
+ 
+   Our code ensures that the exec will not return before the new executable
+   has completed loading as it waits to return the tid returned by process_execute()
+   and the return of that function will indicate the success of the load 
+   to the calling thread.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -165,6 +170,12 @@ When P terminates after C exits:
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
+
+we chose to implement access to user memory from the kernel the way we
+did as it provided to be a simpler approach by verifying that the address 
+that was passed was a valid (non-NULL and in user space) physical or virtual
+before executing the syscall or killing the process than other implementations
+we found.
 
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
