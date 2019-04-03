@@ -38,7 +38,7 @@ None
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
-- Process execute, call start process. Load process is called too.
+- process_execute(), call start_process(). Load process is called too.
 - Then we start tokenizing the file that is passed in by calling strtok_r() 
 on the file passed. We call it once initially and then create 
 an integer which indicates the number of arguments which we set that to 1 initially. 
