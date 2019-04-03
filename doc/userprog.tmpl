@@ -38,7 +38,8 @@ None
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
-- process_execute(), call start_process(). Load process is called too.
+- process_execute() will create a new thread. Once start_process() is called, 
+it will load the user program.
 - Then we start tokenizing the file that is passed in by calling strtok_r() 
 on the file passed. We call it once initially and then create 
 an integer which indicates the number of arguments which we set that to 1 initially. 
@@ -128,6 +129,24 @@ in the user space than kernel space.
 >> that all resources are freed in each case?  How about when P
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
+
+Before C exists: 
+Process P will be blocked until C actually exits. 
+
+After C exists:
+The kernel will turn C into a "zombie" but still continue to use
+resources. The kernel will still have some information about C so 
+that P can call wait later.
+
+When P terminates without waiting, before C exits:
+C will be abandoned (also known as orphaned) and will take up more resources
+until C is matched with init. Init will eventually perform the wait system call for
+C until it exits.
+
+When P terminates after C exits:
+
+
+
 
 ---- RATIONALE ----
 
