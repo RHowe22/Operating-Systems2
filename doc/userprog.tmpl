@@ -100,10 +100,23 @@ in the user space than kernel space.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
 
+ file descriptors are stored as a key value pair between that actual file
+ descriptor and the file pointer to the open
+ file descriptors are unique within the OS as when the file is opened in the 
+ syscall a unique file descriptor will be created.
+
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
+
+	for reading and writing user data the process will first check if it
+	has a file descriptor for the one passed as an arguement or if the 
+	file descriptor is 0 on a read, or 1 on a write. If it does not have this
+	descriptor then it then it returns with an error, otherwise it checks if the
+	buffer[0] up to buffer[size-1] is mapped to that process if thats false then
+	it returns with an error, then the process reads from or writes SIZE bytes to
+	the file or upto the end of the file.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -190,6 +203,9 @@ we found.
 
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
+
+ potential disadvantages is that as file descriptors are stored in a list
+ in a process finding file descriptors for the process may be slow. 
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
