@@ -115,6 +115,17 @@ in the user space than kernel space.
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
 
+  in our implementation every process stores information on the children
+  it spawned including the childs PID, its status (ie. if its dead or not)
+  if this process has already called wait on it, and its exit status if it
+  was killed. the child will be responsible for updating its status and its exit
+  status for the parent.
+  with that in mind implementation of wait first checks to see if the process that the 
+  current process wishes to wait on is its child, if that returns true then
+  it checks if it has already called wait on that child, if that returns false
+  it then blocks itself until that child indicates to its parent that child has died
+  and exited, which that child process updates when it terminates.
+
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
 >> process to be terminated.  System calls are fraught with such
