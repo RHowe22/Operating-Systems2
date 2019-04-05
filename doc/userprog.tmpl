@@ -38,31 +38,36 @@ None
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
-  When starting a process, process_execute() causes start_process() to run 
-  which calls load() all in process.c. In load() we start tokenizing the file_name 
-  parameter by calling strtok_r() once and using " " as our delemiter. We call it 
-  once initially and then create an integer which indicates the number of arguments 
-  which we set that to 1 initially. Then we pass in the first token 
-  (i.e. argv[0]/executable name) to filesys_open to open the executable. Then after 
-  setup_stack() returns successfully,decrement the the stack pointer by the length 
-  of string in the token including the null terminator and write that string to the stack.
+  When starting a process, process_execute() causes start_process()
+  to run which calls load() all in process.c. In load() we start 
+  tokenizing the file_name parameter by calling strtok_r() once 
+  and using " " as our delemiter. We call it once initially and then 
+  create an integer which indicates the number of arguments which we 
+  set that to 1 initially. Then we pass in the first token 
+  (i.e. argv[0]/executable name) to filesys_open to open the executable. 
+  Then after setup_stack() returns successfully,decrement the the stack 
+  pointer by the length of string in the token including the null terminator 
+  and write that string to the stack.
 
-  We then continue to tokenize the rest of the string, incrementing the arguement count, 
-  moving the stackpointer down, and writing strings to the stack. After passing the arguements 
-  onto the stack, we will create a second pointer that will point to the current position of 
-  the stack pointer. Then we will decrement the stack pointer to the next address that is 
-  divisible by 4 for word padding, adding null termintators as it is pushed down, and then push 
-  down another 8 null terminating chars to set argv[argc] to a null pointer. 
+  We then continue to tokenize the rest of the string, incrementing the 
+  argument count, moving the stackpointer down, and writing strings to 
+  the stack. After passing the arguments onto the stack, we will create a 
+  second pointer that will point to the current position of the stack pointer. 
+  Then we will decrement the stack pointer to the next address that is divisible 
+  by 4 for word padding, adding null termintators as it is pushed down, and then 
+  push down another 8 null terminating chars to set argv[argc] to a null pointer. 
   
-  Once this is done, we will then start pushing the stack pointer down four bytes and write 
-  the address of the first char of each arguement pushed on to the stack, using the second 
-  pointer to find and keep track of where these arguements are. Once the address of 
-  the arguments have been written onto the stack, we will then write the address of where argv0 
-  was on the stack (i.e. previous addresses pushed onto the stack) and push that onto the stack 
-  and push the arg count as a 4 byte value and push a fake return address of 0 on to the stack.
+  Once this is done, we will then start pushing the stack pointer down four 
+  bytes and write the address of the first char of each arguement pushed on 
+  to the stack, using the second pointer to find and keep track of where these 
+  arguements are. Once the address of the arguments have been written onto the 
+  stack, we will then write the address of where argv0 was on the stack 
+  (i.e. previous addresses pushed onto the stack) and push that onto the 
+  stack and push the arg count as a 4 byte value and push a fake return address 
+  of 0 on to the stack.
   
-  To avoid overflowing the stack page we keep track of the stack pointer as it is decremented to 
-  ensure that it never reaches 4kB below PHYSBASE.
+  To avoid overflowing the stack page we keep track of the stack pointer as it 
+  is decremented to ensure that it never reaches 4kB below PHYSBASE.
 
 
 ---- RATIONALE ----
