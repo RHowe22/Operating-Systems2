@@ -110,13 +110,13 @@ in the user space than kernel space.
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
 
-	for reading and writing user data the process will first check if it
+	For reading and writing user data, the process will first check if it
 	has a file descriptor for the one passed as an arguement or if the 
-	file descriptor is 0 on a read, or 1 on a write. If it does not have this
-	descriptor then it then it returns with an error, otherwise it checks if the
-	buffer[0] up to buffer[size-1] is mapped to that process if thats false then
-	it returns with an error, then the process reads from or writes SIZE bytes to
-	the file or upto the end of the file.
+	file descriptor is 0 for read, or 1 for write. If it does not have this
+	descriptor, then it returns with an error otherwise it checks if the
+	buffer[0] up to buffer[size-1] is mapped to that process. If that is
+	false, then it throws with an error, then the process reads from or 
+	writes SIZE bytes to the file or upto the end of the file.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -125,25 +125,27 @@ in the user space than kernel space.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
-	for both of these scenarios the the least number of inspections of the page table
-	is 2 for checking if the beggining of the data that copied is mapped and has a valid user address
-	and the most will be 4 for checking if the end of this data will still be valid.
-	we dont believe there will much more room for improving this as both of these checks must
+	For both of these scenarios, the least number of inspections of the 
+	page table is two for checking if the start of the data that is copied 
+	is mapped and has a valid user address. The most will be 4 for checking 
+	if the end of this data will still be valid. We don't believe that there 
+	will much more room for improving this as both of these checks must
 	happen to validate the entirety of the data that is to be copied.
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
 
-	in our implementation every process stores information on the children
-  	it spawned including the childs PID, its status (ie. if its dead or not)
-  	if this process has already called wait on it, and its exit status if it
-  	was killed. the child will be responsible for updating its status and its exit
-  	status for the parent.
-  	with that in mind implementation of wait first checks to see if the process that the 
-  	current process wishes to wait on is its child, if that returns true then
-  	it checks if it has already called wait on that child, if that returns false
-  	it then blocks itself until that child indicates to its parent that child has died
-  	and exited, which that child process updates when it terminates.
+	In our implementation, every process stores information on the children
+  	it spawned including the child's PID, it's status (ie. if it's dead or not)
+  	if this process has already called wait on it, and its exit status and 
+	if it was killed. The child will be responsible for updating its status 
+	and its exit status for the parent.
+  	With that in mind, implementation of wait() first checks to see if the 
+	process that the current process wishes to wait on is its child. If that 
+	returns true, then it checks if it has already called wait() on that child.
+	If that returns false, it then blocks itself until that child indicates to 
+	its parent that child has died and exited, which that child process updates 
+	when it terminates.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -158,6 +160,19 @@ in the user space than kernel space.
 >> allocated resources (locks, buffers, etc.) are freed?  In a few
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
+
+   When dealing with pointers, there could be a possiblity that we are 
+   dereferencing a NULL pointer. So we need to make sure that we are 
+   validating every pointer to ensure that every pointer refers to a 
+   valid memory address. 
+
+   When handling system calls, there could be a possibility that the 
+   arguments could be wrong or the syscall number could be wrong.
+   For example, in the case of the read syscall, we need to ensure that
+   the file descriptor is valid, the pointer (buffer) is dereferenced and 
+   the length is valid i.e. not negative. If all three arguments are not
+   valid, it will terminate the process.
+
 
 ---- SYNCHRONIZATION ----
 
