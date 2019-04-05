@@ -38,36 +38,31 @@ None
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
-  When starting a process, process_execute() causes start_process()
-  to run which calls load() all in process.c. In load() we start 
-  tokenizing the file_name parameter by calling strtok_r() once 
-  and using " " as our delemiter. We call it once initially and then 
-  create an integer which indicates the number of arguments which we 
-  set that to 1 initially. Then we pass in the first token 
-  (i.e. argv[0]/executable name) to filesys_open to open the executable. 
-  Then after setup_stack() returns successfully,decrement the the stack 
-  pointer by the length of string in the token including the null terminator 
-  and write that string to the stack.
+  When starting a process, process_execute() causes start_process() to run 
+  which calls load() all in process.c. In load() we start tokenizing the file_name 
+  parameter by calling strtok_r() once and using " " as our delemiter. We call it 
+  once initially and then create an integer which indicates the number of arguments 
+  which we set that to 1 initially. Then we pass in the first token 
+  (i.e. argv[0]/executable name) to filesys_open to open the executable. Then after 
+  setup_stack() returns successfully,decrement the the stack pointer by the length 
+  of string in the token including the null terminator and write that string to the stack.
 
-  We then continue to tokenize the rest of the string, incrementing the 
-  argument count, moving the stackpointer down, and writing strings to 
-  the stack. After passing the arguments onto the stack, we will create a 
-  second pointer that will point to the current position of the stack pointer. 
-  Then we will decrement the stack pointer to the next address that is divisible 
-  by 4 for word padding, adding null termintators as it is pushed down, and then 
-  push down another 8 null terminating chars to set argv[argc] to a null pointer. 
+  We then continue to tokenize the rest of the string, incrementing the arguement count, 
+  moving the stackpointer down, and writing strings to the stack. After passing the arguements 
+  onto the stack, we will create a second pointer that will point to the current position of 
+  the stack pointer. Then we will decrement the stack pointer to the next address that is 
+  divisible by 4 for word padding, adding null termintators as it is pushed down, and then push 
+  down another 8 null terminating chars to set argv[argc] to a null pointer. 
   
-  Once this is done, we will then start pushing the stack pointer down four 
-  bytes and write the address of the first char of each arguement pushed on 
-  to the stack, using the second pointer to find and keep track of where these 
-  arguements are. Once the address of the arguments have been written onto the 
-  stack, we will then write the address of where argv0 was on the stack 
-  (i.e. previous addresses pushed onto the stack) and push that onto the 
-  stack and push the arg count as a 4 byte value and push a fake return address 
-  of 0 on to the stack.
+  Once this is done, we will then start pushing the stack pointer down four bytes and write 
+  the address of the first char of each arguement pushed on to the stack, using the second 
+  pointer to find and keep track of where these arguements are. Once the address of 
+  the arguments have been written onto the stack, we will then write the address of where argv0 
+  was on the stack (i.e. previous addresses pushed onto the stack) and push that onto the stack 
+  and push the arg count as a 4 byte value and push a fake return address of 0 on to the stack.
   
-  To avoid overflowing the stack page we keep track of the stack pointer as it 
-  is decremented to ensure that it never reaches 4kB below PHYSBASE.
+  To avoid overflowing the stack page we keep track of the stack pointer as it is decremented to 
+  ensure that it never reaches 4kB below PHYSBASE.
 
 
 ---- RATIONALE ----
@@ -105,10 +100,23 @@ in the user space than kernel space.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
 
+ file descriptors are stored as a key value pair between that actual file
+ descriptor and the file pointer to the open
+ file descriptors are unique within the OS as when the file is opened in the 
+ syscall a unique file descriptor will be created.
+
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
+
+	for reading and writing user data the process will first check if it
+	has a file descriptor for the one passed as an arguement or if the 
+	file descriptor is 0 on a read, or 1 on a write. If it does not have this
+	descriptor then it then it returns with an error, otherwise it checks if the
+	buffer[0] up to buffer[size-1] is mapped to that process if thats false then
+	it returns with an error, then the process reads from or writes SIZE bytes to
+	the file or upto the end of the file.
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -117,8 +125,25 @@ in the user space than kernel space.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+	for both of these scenarios the the least number of inspections of the page table
+	is 2 for checking if the beggining of the data that copied is mapped and has a valid user address
+	and the most will be 4 for checking if the end of this data will still be valid.
+	we dont believe there will much more room for improving this as both of these checks must
+	happen to validate the entirety of the data that is to be copied.
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+	in our implementation every process stores information on the children
+  	it spawned including the childs PID, its status (ie. if its dead or not)
+  	if this process has already called wait on it, and its exit status if it
+  	was killed. the child will be responsible for updating its status and its exit
+  	status for the parent.
+  	with that in mind implementation of wait first checks to see if the process that the 
+  	current process wishes to wait on is its child, if that returns true then
+  	it checks if it has already called wait on that child, if that returns false
+  	it then blocks itself until that child indicates to its parent that child has died
+  	and exited, which that child process updates when it terminates.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -140,6 +165,11 @@ in the user space than kernel space.
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
+ 
+   Our code ensures that the exec will not return before the new executable
+   has completed loading as it waits to return the tid returned by process_execute()
+   and the return of that function will indicate the success of the load 
+   to the calling thread.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -171,8 +201,17 @@ When P terminates after C exits:
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+we chose to implement access to user memory from the kernel the way we
+did as it provided to be a simpler approach by verifying that the address 
+that was passed was a valid (non-NULL and in user space) physical or virtual
+before executing the syscall or killing the process than other implementations
+we found.
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
+
+ potential disadvantages is that as file descriptors are stored in a list
+ in a process finding file descriptors for the process may be slow. 
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
