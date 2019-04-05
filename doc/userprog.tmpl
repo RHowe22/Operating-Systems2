@@ -125,19 +125,25 @@ in the user space than kernel space.
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+	for both of these scenarios the the least number of inspections of the page table
+	is 2 for checking if the beggining of the data that copied is mapped and has a valid user address
+	and the most will be 4 for checking if the end of this data will still be valid.
+	we dont believe there will much more room for improving this as both of these checks must
+	happen to validate the entirety of the data that is to be copied.
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
 
-  in our implementation every process stores information on the children
-  it spawned including the childs PID, its status (ie. if its dead or not)
-  if this process has already called wait on it, and its exit status if it
-  was killed. the child will be responsible for updating its status and its exit
-  status for the parent.
-  with that in mind implementation of wait first checks to see if the process that the 
-  current process wishes to wait on is its child, if that returns true then
-  it checks if it has already called wait on that child, if that returns false
-  it then blocks itself until that child indicates to its parent that child has died
-  and exited, which that child process updates when it terminates.
+	in our implementation every process stores information on the children
+  	it spawned including the childs PID, its status (ie. if its dead or not)
+  	if this process has already called wait on it, and its exit status if it
+  	was killed. the child will be responsible for updating its status and its exit
+  	status for the parent.
+  	with that in mind implementation of wait first checks to see if the process that the 
+  	current process wishes to wait on is its child, if that returns true then
+  	it checks if it has already called wait on that child, if that returns false
+  	it then blocks itself until that child indicates to its parent that child has died
+  	and exited, which that child process updates when it terminates.
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
