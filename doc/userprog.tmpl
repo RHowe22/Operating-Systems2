@@ -213,10 +213,10 @@ Members added to struct thread in threads.h
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
-Before C exists: 
+Before C exits: 
 Process P will be blocked until C actually exits. 
 
-After C exists:
+After C exits:
 The kernel will turn C into a "zombie" but still continue to use
 resources. The kernel will still have some information about C so 
 that P can call wait later.
@@ -227,9 +227,7 @@ until C is matched with init. Init will eventually perform the wait system call 
 C until it exits.
 
 When P terminates after C exits:
-
-
-
+Nothing different, the usual process.
 
 ---- RATIONALE ----
 
