@@ -95,6 +95,24 @@ in the user space than kernel space.
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+ 
+ in threads.h 
+ struct fileDescriptor {
+	 struct file * openfile;  // refrerence to open file
+	 int FDval;     // actual file descriptor for the file
+ };
+ the purpose of this struct is to allow for a key-value
+ pairing between open files and their file descriptor for a particular 
+ process
+
+members added to struct thread in thread.handl
+	fileDescriptor [128] openfiles;  // allows for a process to have upto
+	// 128 open files to keep track of
+	int numFD; // number of current open files the process has
+	
+	int nexFileDescriptor; // used for determining the next FDVal
+	// to be used when opening a file
+
 
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a
@@ -102,8 +120,8 @@ in the user space than kernel space.
 
  file descriptors are stored as a key value pair between that actual file
  descriptor and the file pointer to the open
- file descriptors are unique within the OS as when the file is opened in the 
- syscall a unique file descriptor will be created.
+ file descriptors are unique within a single process so as to prevent
+ race conditions between multiple processes trying to open files.
 
 ---- ALGORITHMS ----
 
