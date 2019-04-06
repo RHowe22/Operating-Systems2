@@ -17,7 +17,10 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "lib/string.h"
 
+#include "devices/timer.h"
+#include "lib/stdio.h"
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -88,6 +91,7 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  timer_mdelay(15000);
   return -1;
 }
 
@@ -214,6 +218,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
+  // begin tokenizing the string
+  int length;
+  char* copyname =palloc_get_page (0); //temporarily allocate a copy of the file_name
+  strlcpy(copyname,file_name,PGSIZE);
+  char * saveptr =NULL;
+  char * token = strtok_r(copyname," ",&saveptr);
+  int argcount=1;
+  if(token!= NULL)
+    goto done;
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -222,10 +235,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open (token);
   if (file == NULL) 
     {
-      printf ("load: %s: open failed\n", file_name);
+      printf ("load: %s: open failed\n", token);
       goto done; 
     }
 
@@ -238,7 +251,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       || ehdr.e_phentsize != sizeof (struct Elf32_Phdr)
       || ehdr.e_phnum > 1024) 
     {
-      printf ("load: %s: error loading executable\n", file_name);
+      printf ("load: %s: error loading executable\n", token);
       goto done; 
     }
 
@@ -305,14 +318,55 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (!setup_stack (esp))
     goto done;
 
+  // begin adding arguements to the stack
+  for( ;token != NULL; token = strtok_r(NULL," ",&saveptr)){
+    argcount++;  // add to the count of arguements
+    length =(strlen(token)+1);
+     if((long)*esp- length <= 0 )
+        goto done;           //verify that adding args to the stack 
+     *esp = (char*)*esp- length;
+     memcpy(*esp,token,length); //copy args to the stack
+  }
+
+  void **espcopy =esp; // make a copy of esp for pushing address of arguements
+
+  // if address of is not at multiple of 4 fill with null chars
+  for((length =(uint32_t)*esp%4);length< 4;length++){
+    if((long)*esp -1 <= 0)
+        goto done;  // verify again that adding to the stack is still valid
+     *((char *)*esp--)=0;  // add null character
+  }
+  
+
+  if((long)*esp-(4*(argcount+4)) <= 0)
+    goto done;   //validate that pushing the pointers to all arguments, int argc, and fake RA will not fill the stack
+
+  // now push pointers to the arguements
+  *((int*) *esp--)= 0; //push null arguement (ie.argv[argc])
+  //push all remaining
+
+  for(int i =0;i<argcount;i++)
+  {
+    *((int*) *esp--)= (int) *espcopy;
+    *espcopy= (*espcopy) + (strlen((char*) *espcopy)+2);
+  }
+  espcopy = esp;
+  *((int*) *esp--)= (int) *espcopy; // push pointer to argv0 on stack
+  *((int*) *esp--)= argcount; // push the arguement count
+  *((int*) *esp--)= 0 ; // push fake return address
+
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
   success = true;
+ hex_dump( (uintptr_t) *esp ,*esp,60,true);
 
  done:
   /* We arrive here whether the load is successful or not. */
+
   file_close (file);
+  palloc_free_page(copyname);
+
   return success;
 }
 
