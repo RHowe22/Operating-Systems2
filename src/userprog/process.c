@@ -235,7 +235,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open (token);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", token);
@@ -330,7 +330,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   void *espcopy =*esp; // make a copy of esp for pushing address of arguements
 
   // if address of is not at multiple of 4 fill with null chars
-  for((length =(uint32_t)*esp%4);length< 4;length++){
+  for((length =(uint32_t)*esp%4);length>0;length--){
     if((uint32_t)(*esp )-1 <= 0)
       goto done;  // verify again that adding to the stack is still valid
       *esp= (char*)(*esp)-1;
@@ -349,7 +349,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   {
     *esp = (int*)(*esp)-1;
     *((int*) *esp)= (int) espcopy;
-    espcopy= (char*)(espcopy) + (strlen((char*) espcopy)+2);
+    espcopy= (char*)(espcopy) + (strlen((char*) espcopy)+1);
   }
   espcopy = *esp;
   *esp = (int*)(*esp)-1;
@@ -361,7 +361,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
- hex_dump( (uintptr_t) *esp ,*esp,60,true);
 
   success = true;
 
