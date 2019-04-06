@@ -91,7 +91,7 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  timer_mdelay(15000);
+  timer_mdelay(5000);
   return -1;
 }
 
@@ -224,8 +224,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   strlcpy(copyname,file_name,PGSIZE);
   char * saveptr =NULL;
   char * token = strtok_r(copyname," ",&saveptr);
-  int argcount=1;
-  if(token!= NULL)
+  int argcount=0;
+  if(token== NULL)
     goto done;
 
   /* Allocate and activate page directory. */
@@ -235,7 +235,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (token);
+  file = filesys_open (file_name);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", token);
@@ -322,44 +322,48 @@ load (const char *file_name, void (**eip) (void), void **esp)
   for( ;token != NULL; token = strtok_r(NULL," ",&saveptr)){
     argcount++;  // add to the count of arguements
     length =(strlen(token)+1);
-     if((long)*esp- length <= 0 )
-        goto done;           //verify that adding args to the stack 
-     *esp = (char*)*esp- length;
+    if(((uint32_t)(*esp))-length <= 0 )
+      goto done;           //verify that adding args to the stack 
+    *esp = (char*)*esp- length;
      memcpy(*esp,token,length); //copy args to the stack
   }
-
-  void **espcopy =esp; // make a copy of esp for pushing address of arguements
+  void *espcopy =*esp; // make a copy of esp for pushing address of arguements
 
   // if address of is not at multiple of 4 fill with null chars
   for((length =(uint32_t)*esp%4);length< 4;length++){
-    if((long)*esp -1 <= 0)
-        goto done;  // verify again that adding to the stack is still valid
-     *((char *)*esp--)=0;  // add null character
+    if((uint32_t)(*esp )-1 <= 0)
+      goto done;  // verify again that adding to the stack is still valid
+      *esp= (char*)(*esp)-1;
+    *((char *)*esp)=0;  // add null character
   }
-  
 
-  if((long)*esp-(4*(argcount+4)) <= 0)
+  if((uint32_t)*esp-(4*(argcount+4)) <= 0)
     goto done;   //validate that pushing the pointers to all arguments, int argc, and fake RA will not fill the stack
 
   // now push pointers to the arguements
-  *((int*) *esp--)= 0; //push null arguement (ie.argv[argc])
+  *esp = (int*)(*esp)-1;
+  *((int*) *esp)= 0; //push null arguement (ie.argv[argc])
   //push all remaining
 
   for(int i =0;i<argcount;i++)
   {
-    *((int*) *esp--)= (int) *espcopy;
-    *espcopy= (*espcopy) + (strlen((char*) *espcopy)+2);
+    *esp = (int*)(*esp)-1;
+    *((int*) *esp)= (int) espcopy;
+    espcopy= (char*)(espcopy) + (strlen((char*) espcopy)+2);
   }
-  espcopy = esp;
-  *((int*) *esp--)= (int) *espcopy; // push pointer to argv0 on stack
-  *((int*) *esp--)= argcount; // push the arguement count
-  *((int*) *esp--)= 0 ; // push fake return address
+  espcopy = *esp;
+  *esp = (int*)(*esp)-1;
+  *((int*) *esp)= (int) espcopy; // push pointer to argv0 on stack
+  *esp = (int*)(*esp)-1;
+  *((int*) *esp)= argcount; // push the arguement count
+  *esp = (int*)(*esp)-1;
+  *((int*) *esp)= 0 ; // push fake return address
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
+ hex_dump( (uintptr_t) *esp ,*esp,60,true);
 
   success = true;
- hex_dump( (uintptr_t) *esp ,*esp,60,true);
 
  done:
   /* We arrive here whether the load is successful or not. */
