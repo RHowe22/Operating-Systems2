@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "lib/user/syscall.h"
+#include "lib/kernel/stdio.h"
 static void syscall_handler (struct intr_frame *);
 
 void
@@ -42,6 +43,10 @@ int filesize (int fd){
   return -1;
 }
 int write (int fd, const void * buffer, unsigned size){
+  if(fd == 1){
+    putbuf(buffer,size);
+  }
+  else
   return -1;
 }
 void seek (int fd, unsigned postion){
