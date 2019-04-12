@@ -171,8 +171,7 @@ thread_create (const char *name, int priority,
   struct switch_entry_frame *ef;
   struct switch_threads_frame *sf;
   tid_t tid;
-
-  ASSERT (function != NULL);
+ 
 
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
@@ -198,6 +197,12 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  #ifdef USERPROG
+    t->nextFD=2;
+    t->numFD=0;
+  #endif
+
+  ASSERT (function != NULL);
   /* Add to run queue. */
   thread_unblock (t);
 
@@ -578,7 +583,18 @@ allocate_tid (void)
 
   return tid;
 }
-
+#ifdef USERPROG
+struct file * findFD(int fd){
+  struct thread * t = thread_current();
+  int index;
+  for(index=0; index < t->numFD; index++){
+      if(t->openfilelists[index].fd==fd){
+        return t->openfilelists[index].fileval;
+      }
+  return NULL;    
+  }
+#endif  
+}
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);

@@ -4,7 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-
+#include "../filesys/file.h"
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -96,6 +96,14 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+    struct FDPair   // key value pairing of file descriptor to actual file
+    {
+      int fd;
+      struct file * fileval;
+    };
+    struct FDPair openfilelists [128];
+    uint8_t numFD;    // number of File Descriptors the file has 
+    int  nextFD;
 #endif
 
     /* Owned by thread.c. */
@@ -136,6 +144,8 @@ void thread_set_priority (int);
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
-int thread_get_load_avg (void);
-
+int thread_get_load_avg (void); 
+#ifdef USERPROG
+struct file * findFD (int);
+#endif
 #endif /* threads/thread.h */
