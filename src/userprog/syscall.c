@@ -31,6 +31,7 @@ void
 syscall_init (void) 
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  activate_PIDlist();
 }
 
 static void
@@ -61,23 +62,18 @@ void halt (void){
 void exit (int status){
   struct thread * t = thread_current();
   char * saveptr;
+  list_entry ( findPid((pid_t)t->tid) , struct parchild ,allpid)->retVal= status;
   printf("%s:exit(%d)",strtok_r(t->name," ",saveptr),status);
-  thread_exit();
+  process_exit();
 }
 
 pid_t exec (const char *  cmd_line){
-  return 0;
+  return spawnChild(cmd_line,(pid_t) (thread_current()->tid);
 }
 
 
 int wait (tid_t pid){
-  if(true) // should do checking here to see if the child
     return process_wait(pid);
-  else
-  {
-    exit(-1);
-  }
-    
 }
 bool create (const char * file, unsigned initial_size){
   return filesys_create(file,initial_size);
