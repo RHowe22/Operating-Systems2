@@ -25,9 +25,7 @@
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
-// list to store all Pairchild elements
-static struct list allPID;
-static struct semaphore inAllPID
+
 /*initializes elements related to the PIDList*/
 void activate_PIDlist(){
 
@@ -59,13 +57,18 @@ process_execute (const char *file_name)
     palloc_free_page (fn_copy); 
   else{
     sema_down(&inAllPID);
+    //allocate memory for the parchild struct
     struct parchild * elem = palloc_get_page(0);
+    // initalize the processes members
     elem->pidval= (pid_t)tid;
-    elem->parPid = PID_ERROR;
-    elem->retVal =0 ;
+    elem->parPid = PID_ERROR; // no parent confirmed yet
+    elem->retVal =0 ;  // intialize fake retval
     sema_init(&elem->parentwaiting,0);
-    list_init(&(elem->childlist));
-    list_push_back(&allPID,&(elem->allpid));
+     // no one can use the semaphore till the child ups it
+     // when it exits
+    list_init(&(elem->childlist)); // list for children
+    list_push_back(&allPID,&(elem->allpid)); // all its elements
+    sema_up(&inAllPID);
   }  
   return tid;
 }
@@ -114,17 +117,16 @@ int
 process_wait (tid_t child_tid UNUSED) 
 {
   int retval= -1;
-  struct parchild * cur =list_entry(
-      findPid(&allPID,(pid_t)thread_current()->tid),struct parchild, allpid);
-  
-  struct list_elem * childelem =findPid(&(cur->childlist),child_tid);
-  if(childelem!= list_end(&cur->childlist))
+  // finds the child pid in the list of all processes
+  struct list_elem * childelem=findPid(&allPID,(pid_t)child_tid);
+  if(childelem!=list_end(&allPID))
   {
-     struct parchild * child = list_entry(childelem,struct parchild,childelem) ;
-     sema_down(&child->parentwaiting);
-     retval=child->retVal;
-     sema_down(&inAllPID);
-     list_remove(&child->childelem);
+     struct parchild * child =list_entry(childelem,struct parchild, allpid);
+     sema_down(&child->parentwaiting); // blocks until the child has certainly finished
+     retval=child->retVal; // get that childs retval
+     sema_down(&inAllPID);  // modify lists
+     // remove child from all lists and free memory
+     list_remove(&child->childelem); 
      list_remove(&child->allpid);
      palloc_free_page(child);
      sema_up(&inAllPID);
@@ -140,16 +142,15 @@ process_exit (void)
   uint32_t *pd;
 
     sema_down(&inAllPID);
-    struct list_elem * pidEnt=findPid(&allPID,(pid_t)cur->tid);
-    struct parchild *curPC= list_entry(pidEnt,struct parchild,allpid);
-    sema_up(&(curPC->parentwaiting));
-    if(curPC->parPid== PID_ERROR||findPid(&allPID,curPC)==list_end(&allPID))
+    struct parchild *process= list_entry(findPid(&allPID,(pid_t)cur->tid),struct parchild,allpid);
+    sema_up(&(process->parentwaiting));
+    if(process->parPid== PID_ERROR||findPid(&allPID,process)==list_end(&allPID))
     {
-      list_remove(pidEnt);
-      while(!list_empty(&curPC->childlist)){
-        list_pop_front(&curPC->childlist)
+      list_remove(&process->allpid);
+      while(!list_empty(&process->childlist)){
+        list_pop_front(&process->childlist);
       }
-      palloc_free_page(curPC);
+      palloc_free_page(process);
     }
   sema_up(&inAllPID);
   /* Destroy the current process's page directory and switch back
@@ -594,8 +595,9 @@ struct list_elem * findPid(struct list * list, pid_t pidval){
       struct list_elem * childelem = findPid(&allPID,childpid);
       struct parchild * par = list_entry(parentelem,struct parchild,allpid);
       struct parchild * child =list_entry(childelem,struct parchild,allpid);
-      child->parPid=parpid;
-      list_push_back(&(par->childlist),&(child->chldelem));
+      child->parPid=parpid; // set the childs parent
+      //add child to parents child list
+      list_push_back(&(par->childlist),&(child->childelem)); 
       sema_up(&inAllPID);
       retval = childpid;
    }

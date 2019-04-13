@@ -8,6 +8,10 @@
 typedef int pid_t;
 #define PID_ERROR ((pid_t) -1)
 
+// list to store all Pairchild elements
+static struct list allPID;
+static struct semaphore inAllPID;
+
 struct parchild{
     pid_t pidval;
     int retVal;

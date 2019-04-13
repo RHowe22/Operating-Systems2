@@ -68,12 +68,26 @@ void exit (int status){
 }
 
 pid_t exec (const char *  cmd_line){
-  return spawnChild(cmd_line,(pid_t) (thread_current()->tid);
+  return spawnChild(cmd_line,(pid_t)thread_current()->tid);
 }
 
 
 int wait (tid_t pid){
-    return process_wait(pid);
+    struct parchild * cur = list_entry(findPid(&allPID,(pid_t)thread_current()->tid)
+                  ,struct parchild, allpid) ;
+    struct parchild * child;              
+    // checks to see if the current process has a child with the pid_t pid
+    for(struct list_elem * el = list_begin(&cur->childlist);el!=list_end(&cur->childlist);el= list_next(&cur->childlist)){
+          child=list_entry(el,struct parchild,childelem);
+          if(child->pidval== pid)
+          {
+            //if so return the return of that child
+            return process_wait(pid);
+          }
+
+    }
+    // if the child is not/or no longer in the parents child list return error
+    return -1;
 }
 bool create (const char * file, unsigned initial_size){
   return filesys_create(file,initial_size);
