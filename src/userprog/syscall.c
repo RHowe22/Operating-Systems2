@@ -123,7 +123,7 @@ int read (int fd, void *buffer, unsigned length){
   }
   else{
     struct file * myFile = findFD(fd);
-    file_read(myFile, buffer, length);
+    return file_read(myFile, buffer, length);
   }
 }
 int write (int fd, const void * buffer, unsigned size){
