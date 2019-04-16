@@ -8,6 +8,7 @@
 #include "devices/shutdown.h"
 #include "filesys/filesys.h"
 #include "process.h"
+#include "file.h"
 #include "lib/string.h"
 #define STDOUT_FILENO 0
 #define STDIN_FILENO 1
@@ -117,7 +118,8 @@ int read (int fd, void *buffer, unsigned length){
       return (int) length;
   }
   else{
-    return -1;
+    struct file * myFile = findFD(fd);
+    file_read(myFile, buffer, length);
   }
 }
 int write (int fd, const void * buffer, unsigned size){
