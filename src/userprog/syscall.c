@@ -14,18 +14,18 @@
 static void syscall_handler (struct intr_frame *);
  
 void _exit (int status);
-static void _halt (void);
-static pid_t _exec (const char *file);
-static int _wait (pid_t);
-static bool _create (const char *file, unsigned initial_size);
-static bool _remove (const char *file);
-static int _open (const char *file);
-static int _filesize (int fd);
-static int _read (int fd, void *buffer, unsigned length);
-static int _write (int fd, const void *buffer, unsigned length);
-static void _seek (int fd, unsigned position);
-static unsigned _tell (int fd);
-static void _close (int fd);
+void _halt (void);
+pid_t _exec (const char *file);
+int _wait (pid_t);
+bool _create (const char *file, unsigned initial_size);
+bool _remove (const char *file);
+int _open (const char *file);
+int _filesize (int fd);
+int _read (int fd, void *buffer, unsigned length);
+int _write (int fd, const void *buffer, unsigned length);
+void _seek (int fd, unsigned position);
+unsigned _tell (int fd);
+void _close (int fd);
 
 void
 syscall_init (void) 
@@ -62,8 +62,8 @@ void halt (void){
 void exit (int status){
   struct thread * t = thread_current();
   char * saveptr;
-  list_entry ( findPid((pid_t)t->tid) , struct parchild ,allpid)->retVal= status;
-  printf("%s:exit(%d)",strtok_r(t->name," ",saveptr),status);
+  list_entry ( findPid(&allPID,(pid_t)t->tid) , struct parchild ,allpid)->retVal= status;
+  printf("%s:exit(%d)",strtok_r(t->name," ",&saveptr),status);
   process_exit();
 }
 
@@ -105,7 +105,9 @@ int read (int fd, void *buffer, unsigned length){
   if (fd == STDIN_FILENO){
       input_getc();
   }
-  else
+  else{
+    return -1;
+  }
 }
 int write (int fd, const void * buffer, unsigned size){
   if(fd == STDOUT_FILENO){

@@ -144,7 +144,7 @@ process_exit (void)
     sema_down(&inAllPID);
     struct parchild *process= list_entry(findPid(&allPID,(pid_t)cur->tid),struct parchild,allpid);
     sema_up(&(process->parentwaiting));
-    if(process->parPid== PID_ERROR||findPid(&allPID,process)==list_end(&allPID))
+    if(process->parPid== PID_ERROR||findPid(&allPID,(pid_t)process)==list_end(&allPID))
     {
       list_remove(&process->allpid);
       while(!list_empty(&process->childlist)){
@@ -586,7 +586,7 @@ struct list_elem * findPid(struct list * list, pid_t pidval){
 }
 
 // spawns a child process and pairs a child process to a parent process
- int spawnChild(char * cmdline,pid_t parpid){
+ int spawnChild(const char * cmdline,pid_t parpid){
    pid_t childpid =process_execute(cmdline);
    int retval = PID_ERROR;
    if(childpid !=PID_ERROR){

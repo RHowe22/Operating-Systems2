@@ -26,7 +26,7 @@ int process_wait (tid_t);
 void process_exit (void);
 void process_activate (void);
 void activate_PIDlist(void);
-pid_t spawnChild (char * cmdline, pid_t parPID );
+pid_t spawnChild (const char * cmdline, pid_t parPID );
 
-struct list_elem * findPid(pid_t);
+struct list_elem * findPid(struct list *,pid_t);
 #endif /* userprog/process.h */
