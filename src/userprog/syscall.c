@@ -103,7 +103,18 @@ int filesize (int fd){
 }
 int read (int fd, void *buffer, unsigned length){
   if (fd == STDIN_FILENO){
-      input_getc();
+    char c;
+      for (unsigned i =0; i < length; i++)
+      {
+          c= input_getc();
+           if(c == '\n')
+              return ((int) i);
+          else
+          {
+            *((char*)buffer+i)=c;
+          }    
+      }
+      return (int) length;
   }
   else{
     return -1;
