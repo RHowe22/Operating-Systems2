@@ -100,6 +100,10 @@ int open (const char * file){
   return -1;
 }
 int filesize (int fd){
+  struct file * file = findFD(fd);
+  if(file != NULL){
+    return file_length(file);
+  }
   return -1;
 }
 int read (int fd, void *buffer, unsigned length){
