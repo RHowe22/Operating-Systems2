@@ -583,18 +583,7 @@ allocate_tid (void)
 
   return tid;
 }
-#ifdef USERPROG
-struct file * findFD(int fd){
-  struct thread * t = thread_current();
-  int index;
-  for(index=0; index < t->numFD; index++){
-      if(t->openfilelists[index].fd==fd){
-        return t->openfilelists[index].fileval;
-      }
-  return NULL;    
-  }
-#endif  
-}
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);

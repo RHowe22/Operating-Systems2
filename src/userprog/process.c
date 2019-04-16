@@ -586,9 +586,8 @@ struct list_elem * findPid(struct list * list, pid_t pidval){
 }
 
 // spawns a child process and pairs a child process to a parent process
- int spawnChild(const char * cmdline,pid_t parpid){
+ pid_t spawnChild(const char * cmdline,pid_t parpid){
    pid_t childpid =process_execute(cmdline);
-   int retval = PID_ERROR;
    if(childpid !=PID_ERROR){
       sema_down(&inAllPID);
       struct list_elem * parentelem= findPid(&allPID,parpid);
@@ -599,7 +598,17 @@ struct list_elem * findPid(struct list * list, pid_t pidval){
       //add child to parents child list
       list_push_back(&(par->childlist),&(child->childelem)); 
       sema_up(&inAllPID);
-      retval = childpid;
    }
-   return retval;
+   return childpid;
   }
+
+struct file * findFD(int fd){
+  struct parchild * cur = list_entry(findPid(&allPID,(pid_t) thread_current()),struct parchild, allpid);
+  int index;
+  for(index=0; index < cur->numFD; index++){
+      if(cur->openfilelists[index].fd==fd){
+        return cur->openfilelists[index].fileval;
+      }
+  return NULL;    
+  }
+}

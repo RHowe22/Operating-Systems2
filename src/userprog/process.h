@@ -20,6 +20,14 @@ struct parchild{
     struct list_elem childelem;
     struct list childlist;
     struct semaphore parentwaiting;
+    struct FDPair   // key value pairing of file descriptor to actual file
+    {
+      int fd;
+      struct file * fileval;
+    };
+    struct FDPair openfilelists [128];
+    uint8_t numFD;    // number of File Descriptors the file has 
+    int  nextFD;
 };
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
@@ -29,4 +37,6 @@ void activate_PIDlist(void);
 pid_t spawnChild (const char * cmdline, pid_t parPID );
 
 struct list_elem * findPid(struct list *,pid_t);
+struct file * findFD (int);
+
 #endif /* userprog/process.h */
