@@ -24,8 +24,7 @@ struct parchild{
     {
       int fd;
       struct file * fileval;
-    };
-    struct FDPair openfilelists [128];
+    } openfilelists [128];
     uint8_t numFD;    // number of File Descriptors the file has 
     int  nextFD;
 };

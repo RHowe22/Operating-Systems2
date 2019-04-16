@@ -63,6 +63,8 @@ process_execute (const char *file_name)
     elem->pidval= (pid_t)tid;
     elem->parPid = PID_ERROR; // no parent confirmed yet
     elem->retVal =0 ;  // intialize fake retval
+    elem->nextFD=2;
+    elem->numFD=0;
     sema_init(&elem->parentwaiting,0);
      // no one can use the semaphore till the child ups it
      // when it exits

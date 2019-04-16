@@ -197,10 +197,7 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
-  #ifdef USERPROG
-    t->nextFD=2;
-    t->numFD=0;
-  #endif
+ 
 
   ASSERT (function != NULL);
   /* Add to run queue. */
