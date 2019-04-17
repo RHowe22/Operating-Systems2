@@ -137,9 +137,16 @@ int write (int fd, const void * buffer, unsigned size){
   }
 }
 void seek (int fd, unsigned postion){
-
+  struct file * file = findFD(fd);
+  if(fd!= NULL){
+    file_seek(file,(off_t)postion);
+  }
 }
 unsigned tell (int fd){
+  struct file * file = findFD(fd);
+  if(fd!= NULL){
+    return (unsigned )file_tell(file);
+  }
   return 0;
 }
 void close (int fd){
