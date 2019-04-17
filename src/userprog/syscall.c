@@ -126,16 +126,26 @@ int wait (tid_t pid){
     return retval;
 }
 bool create (const char * file, unsigned initial_size){
-  return filesys_create(file,initial_size);
+  bool retval=false;
+  lock_acquire(&filesys_lock);
+  retval= filesys_create(file,initial_size);
+  lock_release(&filesys_lock);
+  return retval;
 }
 bool remove (const char * file ){
-  return filesys_remove(file);
+  bool retval=false;
+  lock_acquire(&filesys_lock);
+  retval = filesys_remove(file);
+    lock_release(&filesys_lock);
+  return retval;
 }
 int open (const char * file){
   struct parchild * cur = findPid((pid_t)thread_current()->tid);
   if(cur!=NULL && cur->numFD <128)
   {
+    lock_acquire(&filesys_lock);
     struct file * toadd = filesys_open(file);
+    lock_release(&filesys_lock);
     if(toadd != NULL){
       cur->openfilelists[cur->numFD].fileval=toadd;
       cur->openfilelists[cur->numFD].fd=(cur->nextFD+1);
@@ -147,60 +157,83 @@ int open (const char * file){
 }
 int filesize (int fd){
   struct file * file = findFD(fd);
+  int retval = -1;
   if(file != NULL){
-    return file_length(file);
+    lock_acquire(&filesys_lock);
+    retval= file_length(file);
+    lock_release(&filesys_lock);
   }
-  return -1;
+  return retval;
 }
 int read (int fd, void *buffer, unsigned length){
   if (fd == STDIN_FILENO){
+    lock_acquire(&filesys_lock);
+    int retval=(int)length;
     char c;
       for (unsigned i =0; i < length; i++)
       {
           c= input_getc();
-           if(c == '\n')
-              return ((int) i);
+           if(c == '\n'){
+              retval = i;
+              break;
+           }
           else
           {
             *((char*)buffer+i)=c;
           }    
       }
-      return (int) length;
+      lock_release(&filesys_lock);
+      return retval;
   }
   else{
     struct file * myFile = findFD(fd);
-    if(myFile!= NULL)
-      return file_read(myFile, buffer, length);
-    return -1;  
+    int retval = -1;
+    if(myFile!= NULL){
+      lock_acquire(&filesys_lock);
+      retval= file_read(myFile, buffer, length);
+      lock_release(&filesys_lock);
+    }
+    return retval;  
   }
 }
 
 
 int write (int fd, const void * buffer, unsigned size){
   if(fd == STDOUT_FILENO){
+    lock_acquire(&filesys_lock);
     putbuf(buffer,size);
+    lock_release(&filesys_lock);
     return size;
   }
   else{
     struct file * myFile = findFD(fd);
-    if(myFile!= NULL)
-      return file_write (myFile, buffer, size);
-  return -1;  
+    int retval =-1;
+    if(myFile!= NULL){
+      lock_acquire(&filesys_lock);
+      retval =file_write (myFile, buffer, size);
+      lock_release(&filesys_lock);
+    }
+  return retval;  
   }
 }
 
 void seek (int fd, unsigned postion){
   struct file * file = findFD(fd);
   if(file!= NULL){
+    lock_acquire(&filesys_lock);
     file_seek(file,(off_t)postion);
+    lock_release(&filesys_lock);
   }
 }
 unsigned tell (int fd){
   struct file * file = findFD(fd);
+  unsigned retval = 0;
   if(file!= NULL){
-    return (unsigned )file_tell(file);
+    lock_acquire(&filesys_lock);
+    retval=(unsigned)file_tell(file);
+    lock_release(&filesys_lock);
   }
-  return 0;
+  return retval;
 }
 void close (int fd){
   //After closing File, also close FD
