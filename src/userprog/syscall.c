@@ -97,7 +97,18 @@ bool remove (const char * file ){
   return filesys_remove(file);
 }
 int open (const char * file){
-  return -1;
+  struct parchild * cur = list_entry(findPid(&allPID,(pid_t)thread_current()),struct parchild, allpid);
+  if(cur->numFD <128)
+  {
+    struct file * toadd = filesys_open(file);
+    if(toadd != NULL){
+      cur->openfilelists[cur->numFD].fileval=toadd;
+      cur->openfilelists[cur->numFD+1].fd=(cur->nextFD+1);
+      cur-> numFD =  cur-> numFD +1;
+      return (cur->nextFD= cur->nextFD+1);
+    }
+  }
+  return -1;  // result of file has 128 files open
 }
 int filesize (int fd){
   struct file * file = findFD(fd);
