@@ -8,7 +8,7 @@
 #include "devices/shutdown.h"
 #include "filesys/filesys.h"
 #include "process.h"
-#include "file.h"
+#include "filesys/file.h"
 #include "lib/string.h"
 #define STDOUT_FILENO 1
 #define STDIN_FILENO 0
