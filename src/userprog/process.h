@@ -8,9 +8,7 @@
 typedef int pid_t;
 #define PID_ERROR ((pid_t) -1)
 
-// list to store all Pairchild elements
-static struct list allPID;
-static struct semaphore inAllPID;
+
 
 struct parchild{
     pid_t pidval;
@@ -35,7 +33,8 @@ void process_activate (void);
 void activate_PIDlist(void);
 pid_t spawnChild (const char * cmdline, pid_t parPID );
 
-struct list_elem * findPid(struct list *,pid_t);
+struct parchild * findPid(pid_t);
+struct parchild *  findchild (struct list *, pid_t);
 struct file * findFD (int);
 
 #endif /* userprog/process.h */

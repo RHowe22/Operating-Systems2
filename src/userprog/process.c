@@ -25,6 +25,9 @@
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
+// list to store all Pairchild elements
+static struct list allPID ;
+static struct semaphore inAllPID ;
 
 /*initializes elements related to the PIDList*/
 void activate_PIDlist(){
@@ -120,18 +123,21 @@ process_wait (tid_t child_tid UNUSED)
 {
   int retval= -1;
   // finds the child pid in the list of all processes
-  struct list_elem * childelem=findPid(&allPID,(pid_t)child_tid);
-  if(childelem!=list_end(&allPID))
+  struct parchild* child=findPid((pid_t) child_tid);
+  if(child != NULL)
   {
-     struct parchild * child =list_entry(childelem,struct parchild, allpid);
      sema_down(&child->parentwaiting); // blocks until the child has certainly finished
      retval=child->retVal; // get that childs retval
-     sema_down(&inAllPID);  // modify lists
+     /*sema_down(&inAllPID);  // modify lists
      // remove child from all lists and free memory
-     list_remove(&child->childelem); 
+    
+    if(child->parPid!= -1){}
+     list_remove(&child->childelem);  
+                             hex_dump(0,"heres",5,true);
+ 
      list_remove(&child->allpid);
      palloc_free_page(child);
-     sema_up(&inAllPID);
+     sema_up(&inAllPID);*/
   }
   return retval;
 }
@@ -144,17 +150,19 @@ process_exit (void)
   uint32_t *pd;
 
     sema_down(&inAllPID);
-    struct parchild *process= list_entry(findPid(&allPID,(pid_t)cur->tid),struct parchild,allpid);
-    sema_up(&(process->parentwaiting));
-    if(process->parPid== PID_ERROR||findPid(&allPID,(pid_t)process)==list_end(&allPID))
-    {
-      list_remove(&process->allpid);
-      while(!list_empty(&process->childlist)){
-        list_pop_front(&process->childlist);
+    struct parchild *process= findPid((pid_t)cur->tid);
+    if(process != NULL){
+      sema_up(&(process->parentwaiting));
+      if(findPid(process->parPid)== NULL)
+      {
+        list_remove(&process->allpid);
+        while(!list_empty(&process->childlist)){
+          list_pop_front(&process->childlist);
+        }
+        palloc_free_page(process);
       }
-      palloc_free_page(process);
+    sema_up(&inAllPID);
     }
-  sema_up(&inAllPID);
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -419,7 +427,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-
   file_close (file);
   palloc_free_page(copyname);
 
@@ -575,16 +582,28 @@ install_page (void *upage, void *kpage, bool writable)
 }
 
 // finds if pid is in the the list
-struct list_elem * findPid(struct list * list, pid_t pidval){
+struct parchild * findPid(pid_t pidval){
+  struct list_elem * el;
+  struct parchild *tmp;
+  for( el= list_begin(&allPID);el!=list_end(&allPID);el = list_next(el)){
+    tmp = list_entry(el,struct parchild, allpid);
+      if(tmp->pidval== pidval){
+          return tmp;
+      }
+  }
+  return NULL;
+}
+
+struct parchild * findchild(struct list * list,pid_t pidval){
   struct list_elem * el;
   struct parchild *tmp;
   for( el= list_begin(list);el!=list_end(list);el = list_next(el)){
-    tmp = list_entry(el,struct parchild, allpid);
+    tmp = list_entry(el,struct parchild, childelem);
       if(tmp->pidval== pidval){
-          break;
+          return tmp;
       }
   }
-  return el;
+  return NULL;
 }
 
 // spawns a child process and pairs a child process to a parent process
@@ -592,25 +611,28 @@ struct list_elem * findPid(struct list * list, pid_t pidval){
    pid_t childpid =process_execute(cmdline);
    if(childpid !=PID_ERROR){
       sema_down(&inAllPID);
-      struct list_elem * parentelem= findPid(&allPID,parpid);
-      struct list_elem * childelem = findPid(&allPID,childpid);
-      struct parchild * par = list_entry(parentelem,struct parchild,allpid);
-      struct parchild * child =list_entry(childelem,struct parchild,allpid);
-      child->parPid=parpid; // set the childs parent
-      //add child to parents child list
-      list_push_back(&(par->childlist),&(child->childelem)); 
+      struct parchild * par = findPid(parpid);
+      struct parchild * child = findPid(childpid);
+      if(par != NULL && child != NULL )
+      {
+        child->parPid=parpid; // set the childs parent
+        //add child to parents child list
+        list_push_back(&(par->childlist),&(child->childelem)); 
+      }  
       sema_up(&inAllPID);
    }
    return childpid;
   }
 
 struct file * findFD(int fd){
-  struct parchild * cur = list_entry(findPid(&allPID,(pid_t) thread_current()),struct parchild, allpid);
+  struct parchild * cur = findPid((pid_t) thread_current()->tid);
   int index;
-  for(index=0; index < cur->numFD; index++){
-      if(cur->openfilelists[index].fd==fd){
-        return cur->openfilelists[index].fileval;
-      }
+  if(cur!= NULL){
+    for(index=0;index < cur->numFD; index++){
+        if(cur->openfilelists[index].fd==fd){
+          return cur->openfilelists[index].fileval;
+        }
+    }
   }
   return NULL;    
 }

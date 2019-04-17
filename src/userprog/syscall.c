@@ -10,23 +10,12 @@
 #include "process.h"
 #include "filesys/file.h"
 #include "lib/string.h"
-#define STDOUT_FILENO 1
-#define STDIN_FILENO 0
+#include "lib/stdio.h"
+#include "devices/input.h"
+#include "threads/palloc.h"
+
 static void syscall_handler (struct intr_frame *);
  
-void _exit (int status);
-void _halt (void);
-pid_t _exec (const char *file);
-int _wait (pid_t);
-bool _create (const char *file, unsigned initial_size);
-bool _remove (const char *file);
-int _open (const char *file);
-int _filesize (int fd);
-int _read (int fd, void *buffer, unsigned length);
-int _write (int fd, const void *buffer, unsigned length);
-void _seek (int fd, unsigned position);
-unsigned _tell (int fd);
-void _close (int fd);
 struct lock filesys_lock;
 
 void
@@ -42,7 +31,6 @@ static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   int * esp = (int *)f->esp;
-
   int syscall_num = *esp;
   switch (syscall_num) {
     //handler for exit
@@ -100,16 +88,16 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 void halt (void){
-  shutdown();
+  shutdown_power_off();
 }
 
 
 void exit (int status){
   struct thread * t = thread_current();
   char * saveptr;
-  list_entry ( findPid(&allPID,(pid_t)t->tid) , struct parchild ,allpid)->retVal= status;
-  printf("%s:exit(%d)",strtok_r(t->name," ",&saveptr),status);
-  process_exit();
+   findPid((pid_t)t->tid)->retVal= status;
+  printf("%s: exit(%d)\n",strtok_r(t->name," ",&saveptr),status);
+  thread_exit();
 }
 
 pid_t exec (const char *  cmd_line){
@@ -118,21 +106,24 @@ pid_t exec (const char *  cmd_line){
 
 
 int wait (tid_t pid){
-    struct parchild * cur = list_entry(findPid(&allPID,(pid_t)thread_current()->tid)
-                  ,struct parchild, allpid) ;
-    struct parchild * child;              
-    // checks to see if the current process has a child with the pid_t pid
-    for(struct list_elem * el = list_begin(&cur->childlist);el!=list_end(&cur->childlist);el= list_next(el)){
-          child=list_entry(el,struct parchild,childelem);
-          if(child->pidval== pid)
-          {
-            //if so return the return of that child
-            return process_wait(pid);
-          }
-
+  int retval =-1;
+    struct parchild * cur = findPid((pid_t)thread_current()->tid);
+    struct parchild * child =findchild(&cur->childlist,pid);
+    if(cur != NULL && child != NULL){
+       retval= process_wait(pid);
+       list_remove(&child->childelem);
+       list_remove(&child->allpid);
+       while(!list_empty(&child->childlist)){
+         list_pop_front(&child->childlist);
+       }
+       palloc_free_page(child);
+       child=NULL;
     }
-    // if the child is not/or no longer in the parents child list return error
-    return -1;
+
+
+    // if the child is not/or no longer in the parents child list return error 
+    //other wise return the child's retval
+    return retval;
 }
 bool create (const char * file, unsigned initial_size){
   return filesys_create(file,initial_size);
@@ -141,13 +132,13 @@ bool remove (const char * file ){
   return filesys_remove(file);
 }
 int open (const char * file){
-  struct parchild * cur = list_entry(findPid(&allPID,(pid_t)thread_current()),struct parchild, allpid);
-  if(cur->numFD <128)
+  struct parchild * cur = findPid((pid_t)thread_current()->tid);
+  if(cur!=NULL && cur->numFD <128)
   {
     struct file * toadd = filesys_open(file);
     if(toadd != NULL){
       cur->openfilelists[cur->numFD].fileval=toadd;
-      cur->openfilelists[cur->numFD+1].fd=(cur->nextFD+1);
+      cur->openfilelists[cur->numFD].fd=(cur->nextFD+1);
       cur-> numFD =  cur-> numFD +1;
       return (cur->nextFD= cur->nextFD+1);
     }
@@ -178,7 +169,9 @@ int read (int fd, void *buffer, unsigned length){
   }
   else{
     struct file * myFile = findFD(fd);
-    return file_read(myFile, buffer, length);
+    if(myFile!= NULL)
+      return file_read(myFile, buffer, length);
+    return -1;  
   }
 }
 
@@ -190,7 +183,9 @@ int write (int fd, const void * buffer, unsigned size){
   }
   else{
     struct file * myFile = findFD(fd);
-    return file_write (myFile, buffer, size);
+    if(myFile!= NULL)
+      return file_write (myFile, buffer, size);
+  return -1;  
   }
 }
 
@@ -209,7 +204,7 @@ unsigned tell (int fd){
 }
 void close (int fd){
   //After closing File, also close FD
-  struct parchild * cur = list_entry(findPid(&allPID,(pid_t) thread_current()),struct parchild, allpid);
+  struct parchild * cur = findPid((pid_t) thread_current()->tid);
   int index;
   for(index=0; index < cur->numFD; index++){
       if(cur->openfilelists[index].fd==fd){
