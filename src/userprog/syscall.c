@@ -10,8 +10,8 @@
 #include "process.h"
 #include "file.h"
 #include "lib/string.h"
-#define STDOUT_FILENO 0
-#define STDIN_FILENO 1
+#define STDOUT_FILENO 1
+#define STDIN_FILENO 0
 static void syscall_handler (struct intr_frame *);
  
 void _exit (int status);
@@ -123,7 +123,7 @@ int read (int fd, void *buffer, unsigned length){
   }
   else{
     struct file * myFile = findFD(fd);
-    return file_read(myFile, buffer, length);
+    returnfile_read(myFile, buffer, length);
   }
 }
 int write (int fd, const void * buffer, unsigned size){
@@ -131,8 +131,10 @@ int write (int fd, const void * buffer, unsigned size){
     putbuf(buffer,size);
     return size;
   }
-  else
-    return -1;
+  else{
+    struct file * myFile = findFD(fd);
+    return file_write (myFile, buffer, size);
+  }
 }
 void seek (int fd, unsigned postion){
 
