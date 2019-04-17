@@ -161,5 +161,19 @@ unsigned tell (int fd){
   return 0;
 }
 void close (int fd){
-
+  //After closing File, also close FD
+  struct parchild * cur = list_entry(findPid(&allPID,(pid_t) thread_current()),struct parchild, allpid);
+  int index;
+  for(index=0; index < cur->numFD; index++){
+      if(cur->openfilelists[index].fd==fd){
+        //Close file.
+        file_close(cur->openfilelists[index].fileval);
+      }
+  }
+  index = index + 1;
+  for(; index < cur->numFD; index++){
+    cur->openfilelists[index-1] = cur->openfilelists[index];
+    cur->numFD = cur->numFD -1;
+  }
+  
 }
