@@ -611,6 +611,6 @@ struct file * findFD(int fd){
       if(cur->openfilelists[index].fd==fd){
         return cur->openfilelists[index].fileval;
       }
-  return NULL;    
   }
+  return NULL;    
 }
