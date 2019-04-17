@@ -210,12 +210,13 @@ void close (int fd){
       if(cur->openfilelists[index].fd==fd){
         //Close file.
         file_close(cur->openfilelists[index].fileval);
+        index = index + 1;
+        for(; index < cur->numFD; index++){
+          cur->openfilelists[index-1] = cur->openfilelists[index];
+        }
+        cur->numFD = cur->numFD -1;
+        break;
       }
-  }
-  index = index + 1;
-  for(; index < cur->numFD; index++){
-    cur->openfilelists[index-1] = cur->openfilelists[index];
-    cur->numFD = cur->numFD -1;
   }
   
 }
