@@ -122,7 +122,7 @@ int wait (tid_t pid){
                   ,struct parchild, allpid) ;
     struct parchild * child;              
     // checks to see if the current process has a child with the pid_t pid
-    for(struct list_elem * el = list_begin(&cur->childlist);el!=list_end(&cur->childlist);el= list_next(&cur->childlist)){
+    for(struct list_elem * el = list_begin(&cur->childlist);el!=list_end(&cur->childlist);el= list_next(el)){
           child=list_entry(el,struct parchild,childelem);
           if(child->pidval== pid)
           {
@@ -178,7 +178,7 @@ int read (int fd, void *buffer, unsigned length){
   }
   else{
     struct file * myFile = findFD(fd);
-    returnfile_read(myFile, buffer, length);
+    return file_read(myFile, buffer, length);
   }
 }
 
@@ -196,13 +196,13 @@ int write (int fd, const void * buffer, unsigned size){
 
 void seek (int fd, unsigned postion){
   struct file * file = findFD(fd);
-  if(fd!= NULL){
+  if(file!= NULL){
     file_seek(file,(off_t)postion);
   }
 }
 unsigned tell (int fd){
   struct file * file = findFD(fd);
-  if(fd!= NULL){
+  if(file!= NULL){
     return (unsigned )file_tell(file);
   }
   return 0;
