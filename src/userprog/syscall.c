@@ -33,6 +33,7 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
+
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
@@ -40,13 +41,57 @@ syscall_handler (struct intr_frame *f UNUSED)
 
   int syscall_num = *esp;
   switch (syscall_num) {
+    //handler for exit
+    case SYS_EXIT: exit (*(esp + 1));
+                   break;
+
+    //handler for halt
     case SYS_HALT: halt();
                    break;
-
-    case SYS_EXEC: 
+               
+    //handler for exec
+    case SYS_EXEC: f->eax = exec ((char *) *(esp + 1));
                    break;
 
-    case SYS_WRITE: break;
+    //handler for wait
+    case SYS_WAIT: f->eax = wait (*(esp + 1));
+                   break;
+
+    //handler for create
+    case SYS_CREATE: f->eax = create ((char *) *(esp + 1), *(esp + 2));
+                     break;
+
+    //handler for remove
+    case SYS_REMOVE: f->eax = remove ((char *) *(esp + 1));
+                     break;
+
+    //handler for open
+    case SYS_OPEN: f->eax = open ((char *) *(esp + 1));
+                   break;
+
+    //handler for filesize
+    case SYS_FILESIZE: f->eax = filesize (*(esp + 1));
+                       break;
+
+    //handler for read
+    case SYS_READ: f->eax = read (*(esp + 1), (void *) *(esp + 2), *(esp + 3));
+                   break;
+
+    //handler for write
+    case SYS_WRITE: f->eax = write(*(esp+1), (void *) *(esp+2), *(esp+3));
+                    break;
+
+    //handler for sys_seek
+    case SYS_SEEK: seek (*(esp + 1), *(esp + 2));
+                   break; 
+
+    //handler for sys_tell
+    case SYS_TELL: f->eax = tell (*(esp + 1));
+                   break;
+
+    //handler for sys_close
+    case SYS_CLOSE: close (*(esp + 1));
+                    break;
   }
 
   printf ("system call!\n");
@@ -96,7 +141,10 @@ int read (int fd, void *buffer, unsigned length){
       input_getc();
   }
   else
+    return -1;
 }
+
+
 int write (int fd, const void * buffer, unsigned size){
   if(fd == STDOUT_FILENO){
     putbuf(buffer,size);
@@ -105,7 +153,8 @@ int write (int fd, const void * buffer, unsigned size){
   else
     return -1;
 }
-void seek (int fd, unsigned postion){
+
+void seek (int fd, unsigned position){
 
 }
 unsigned tell (int fd){
