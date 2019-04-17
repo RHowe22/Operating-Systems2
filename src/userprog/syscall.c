@@ -41,7 +41,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-  int * esp = (int)f->esp;
+  int * esp = (int *)f->esp;
 
   int syscall_num = *esp;
   switch (syscall_num) {
@@ -58,11 +58,11 @@ syscall_handler (struct intr_frame *f UNUSED)
                    break;
 
     //handler for wait
-    case SYS_WAIT: f->eax = wait (*(esp + 1));
+    case SYS_WAIT: f->eax = wait ((tid_t) *(esp + 1));
                    break;
 
     //handler for create
-    case SYS_CREATE: f->eax = create ((char *) *(esp + 1), *(esp + 2));
+    case SYS_CREATE: f->eax = create ((char *) *(esp + 1),(unsigned) *(esp + 2));
                      break;
 
     //handler for remove
@@ -86,7 +86,7 @@ syscall_handler (struct intr_frame *f UNUSED)
                     break;
 
     //handler for sys_seek
-    case SYS_SEEK: seek (*(esp + 1), *(esp + 2));
+    case SYS_SEEK: seek (*(esp + 1),(unsigned) *(esp + 2));
                    break; 
 
     //handler for sys_tell
