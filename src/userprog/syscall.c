@@ -95,13 +95,17 @@ void halt (void){
 void exit (int status){
   struct thread * t = thread_current();
   char * saveptr;
-   findPid((pid_t)t->tid)->retVal= status;
+  struct parchild * cur =findPid((pid_t)t->tid);
+   cur->retVal= status;
+  file_close(cur->runningfile);
   printf("%s: exit(%d)\n",strtok_r(t->name," ",&saveptr),status);
   thread_exit();
 }
 
 pid_t exec (const char *  cmd_line){
-  return spawnChild(cmd_line,(pid_t)thread_current()->tid);
+  if(cmd_line != NULL)
+    return spawnChild(cmd_line,(pid_t)thread_current()->tid);
+  return PID_ERROR;
 }
 
 
@@ -127,21 +131,25 @@ int wait (tid_t pid){
 }
 bool create (const char * file, unsigned initial_size){
   bool retval=false;
+  if(file != NULL){
   lock_acquire(&filesys_lock);
   retval= filesys_create(file,initial_size);
   lock_release(&filesys_lock);
+  }
   return retval;
 }
 bool remove (const char * file ){
   bool retval=false;
+  if(file != NULL){
   lock_acquire(&filesys_lock);
   retval = filesys_remove(file);
     lock_release(&filesys_lock);
+  }
   return retval;
 }
 int open (const char * file){
   struct parchild * cur = findPid((pid_t)thread_current()->tid);
-  if(cur!=NULL && cur->numFD <128)
+  if(file !=NULL &&cur!=NULL && cur->numFD <128)
   {
     lock_acquire(&filesys_lock);
     struct file * toadd = filesys_open(file);
@@ -166,6 +174,7 @@ int filesize (int fd){
   return retval;
 }
 int read (int fd, void *buffer, unsigned length){
+  if(buffer!=NULL){
   if (fd == STDIN_FILENO){
     lock_acquire(&filesys_lock);
     int retval=(int)length;
@@ -195,10 +204,13 @@ int read (int fd, void *buffer, unsigned length){
     }
     return retval;  
   }
+  }
+  return -1;
 }
 
 
 int write (int fd, const void * buffer, unsigned size){
+if(buffer!=NULL){  
   if(fd == STDOUT_FILENO){
     lock_acquire(&filesys_lock);
     putbuf(buffer,size);
@@ -215,6 +227,8 @@ int write (int fd, const void * buffer, unsigned size){
     }
   return retval;  
   }
+}
+return -1;
 }
 
 void seek (int fd, unsigned postion){

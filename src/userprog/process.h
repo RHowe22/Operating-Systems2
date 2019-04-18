@@ -25,6 +25,7 @@ struct parchild{
     } openfilelists [128];
     uint8_t numFD;    // number of File Descriptors the file has 
     int  nextFD;
+    struct file * runningfile;
 };
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);

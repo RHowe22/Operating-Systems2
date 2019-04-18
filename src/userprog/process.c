@@ -54,16 +54,11 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
-  else{
-    sema_down(&inAllPID);
+  sema_down(&inAllPID);
     //allocate memory for the parchild struct
     struct parchild * elem = palloc_get_page(0);
     // initalize the processes members
-    elem->pidval= (pid_t)tid;
+    elem->pidval= PID_ERROR;
     elem->parPid = PID_ERROR; // no parent confirmed yet
     elem->retVal =0 ;  // intialize fake retval
     elem->nextFD=2;
@@ -74,6 +69,13 @@ process_execute (const char *file_name)
     list_init(&(elem->childlist)); // list for children
     list_push_back(&allPID,&(elem->allpid)); // all its elements
     sema_up(&inAllPID);
+
+  /* Create a new thread to execute FILE_NAME. */
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  if (tid == TID_ERROR)
+    palloc_free_page (fn_copy); 
+  else{
+    elem->pidval=(pid_t)tid;
   }  
   return tid;
 }
@@ -302,6 +304,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", token);
       goto done; 
     }
+  file_deny_write(file);
+  findPid(thread_current()->tid)->runningfile=file;
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -427,7 +431,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
   palloc_free_page(copyname);
 
   return success;
@@ -608,7 +611,7 @@ struct parchild * findchild(struct list * list,pid_t pidval){
 
 // spawns a child process and pairs a child process to a parent process
  pid_t spawnChild(const char * cmdline,pid_t parpid){
-   pid_t childpid =process_execute(cmdline);
+   pid_t childpid =(pid_t) process_execute(cmdline);
    if(childpid !=PID_ERROR){
       sema_down(&inAllPID);
       struct parchild * par = findPid(parpid);
