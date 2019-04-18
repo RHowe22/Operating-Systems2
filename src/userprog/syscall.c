@@ -34,56 +34,104 @@ syscall_handler (struct intr_frame *f UNUSED)
   int syscall_num = *esp;
   switch (syscall_num) {
     //handler for exit
-    case SYS_EXIT: exit (*(esp + 1));
-                   break;
-
+    case SYS_EXIT: 
+    if(validpointr((void *)(esp+1)))
+      exit (*(esp + 1));
+    else
+      exit(-1) ;
+    break;
     //handler for halt
     case SYS_HALT: halt();
                    break;
                
     //handler for exec
-    case SYS_EXEC: f->eax = exec ((char *) *(esp + 1));
-                   break;
+    case SYS_EXEC:
+    if(validpointr((void *)(esp+1)))
+      f->eax = exec ((char *) *(esp + 1));
+    else
+      exit(-1) ;
+     break;
 
     //handler for wait
-    case SYS_WAIT: f->eax = wait ((tid_t) *(esp + 1));
-                   break;
+    case SYS_WAIT:
+    if(validpointr((void *)(esp+1)))
+     f->eax = wait ((tid_t) *(esp + 1));
+    else
+      exit(-1) ;
+    break;
 
     //handler for create
-    case SYS_CREATE: f->eax = create ((char *) *(esp + 1),(unsigned) *(esp + 2));
-                     break;
+    case SYS_CREATE: 
+    if(validpointr((void*)(esp+1))&&validpointr((void*)(esp+2)))
+      f->eax = create ((char *) *(esp + 1),(unsigned) *(esp + 2));
+    else
+      exit(-1) ;  
+    break;
 
     //handler for remove
-    case SYS_REMOVE: f->eax = remove ((char *) *(esp + 1));
-                     break;
+    case SYS_REMOVE: 
+    if(validpointr((void*)(esp+1)))
+      f->eax = remove ((char *) *(esp + 1));
+    else
+      exit(-1) ;  
+    break;
 
     //handler for open
-    case SYS_OPEN: f->eax = open ((char *) *(esp + 1));
+    case SYS_OPEN: 
+    if(validpointr((void*)(esp+1)))
+      f->eax = open ((char *) *(esp + 1));
+    else
+      exit(-1) ;
                    break;
 
     //handler for filesize
-    case SYS_FILESIZE: f->eax = filesize (*(esp + 1));
-                       break;
+    case SYS_FILESIZE: 
+    if(validpointr((void*)(esp+1)))
+      f->eax = filesize (*(esp + 1));
+    else
+      exit(-1) ;  
+    break;
 
     //handler for read
-    case SYS_READ: f->eax = read (*(esp + 1), (void *) *(esp + 2), *(esp + 3));
-                   break;
+    case SYS_READ: 
+    if(validpointr((void*)(esp+1))&&validpointr((void*)(esp+2))&&validpointr((void*)(esp+3)))
+      f->eax = read (*(esp + 1), (void *) *(esp + 2), *(esp + 3));
+    else
+      exit(-1) ;
+    break;
 
     //handler for write
-    case SYS_WRITE: f->eax = write(*(esp+1), (void *) *(esp+2), *(esp+3));
-                    break;
+    case SYS_WRITE: 
+    if(validpointr((void*)(esp+1))&&validpointr((void*)(esp+2))&&validpointr((void*)(esp+3)))
+      f->eax = write(*(esp+1), (void *) *(esp+2), *(esp+3));
+    else
+      exit(-1) ;
+   break;
 
     //handler for sys_seek
-    case SYS_SEEK: seek (*(esp + 1),(unsigned) *(esp + 2));
-                   break; 
+    case SYS_SEEK:
+    if(validpointr((void*)(esp+1))&&validpointr((void*)(esp+2)))
+     seek (*(esp + 1),(unsigned) *(esp + 2));
+    else
+      exit(-1); 
+    break; 
 
     //handler for sys_tell
-    case SYS_TELL: f->eax = tell (*(esp + 1));
-                   break;
+    case SYS_TELL:
+    if(validpointr((void*)(esp+1)))
+     f->eax = tell (*(esp + 1));
+    else
+      exit(-1) ;
+    break;
 
     //handler for sys_close
-    case SYS_CLOSE: close (*(esp + 1));
-                    break;
+    case SYS_CLOSE:
+    if(validpointr((void*)(esp+1)))
+     close (*(esp + 1));
+    else 
+      ;
+    break;
+    default : exit(-1);
   }
 }
 

@@ -37,5 +37,5 @@ pid_t spawnChild (const char * cmdline, pid_t parPID );
 struct parchild * findPid(pid_t);
 struct parchild *  findchild (struct list *, pid_t);
 struct file * findFD (int);
-
+bool validpointr (void *);
 #endif /* userprog/process.h */

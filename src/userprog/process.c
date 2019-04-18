@@ -639,3 +639,7 @@ struct file * findFD(int fd){
   }
   return NULL;    
 }
+
+bool validpointr (void * tocheck){
+  return (tocheck!=NULL)&&(tocheck< PHYS_BASE)&&pagedir_get_page(thread_current()->pagedir,tocheck);
+}
