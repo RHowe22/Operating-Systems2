@@ -641,5 +641,13 @@ struct file * findFD(int fd){
 }
 
 bool validpointr (void * tocheck){
-  return (tocheck!=NULL)&&(tocheck< PHYS_BASE)&&pagedir_get_page(thread_current()->pagedir,tocheck);
+  if(tocheck!= NULL){
+    if(is_user_vaddr(tocheck)){
+      if(pagedir_get_page(thread_current()->pagedir,tocheck)!=NULL)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
 }

@@ -30,9 +30,14 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+
   int * esp = (int *)f->esp;
+  if(!validpointr(esp)){
+    exit(-1);
+  }
   int syscall_num = *esp;
   switch (syscall_num) {
+
     //handler for exit
     case SYS_EXIT: 
     if(validpointr((void *)(esp+1)))
@@ -94,10 +99,12 @@ syscall_handler (struct intr_frame *f UNUSED)
 
     //handler for read
     case SYS_READ: 
-    if(validpointr((void*)(esp+1))&&validpointr((void*)(esp+2))&&validpointr((void*)(esp+3)))
+    if(validpointr((esp+1))&&validpointr((esp+2))&&validpointr((esp+3))){
       f->eax = read (*(esp + 1), (void *) *(esp + 2), *(esp + 3));
-    else
+    }
+    else{
       exit(-1) ;
+    }
     break;
 
     //handler for write
@@ -120,8 +127,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_TELL:
     if(validpointr((void*)(esp+1)))
      f->eax = tell (*(esp + 1));
-    else
-      exit(-1) ;
+
     break;
 
     //handler for sys_close
@@ -129,7 +135,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     if(validpointr((void*)(esp+1)))
      close (*(esp + 1));
     else 
-      ;
+      exit(-1);
     break;
     default : exit(-1);
   }
