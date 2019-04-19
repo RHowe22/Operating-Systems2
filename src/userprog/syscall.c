@@ -99,20 +99,32 @@ syscall_handler (struct intr_frame *f UNUSED)
 
     //handler for read
     case SYS_READ: 
-    if(validpointr((esp+1))&&validpointr((esp+2))&&validpointr((esp+3))){
-      f->eax = read (*(esp + 1), (void *) *(esp + 2), *(esp + 3));
+        if(!(validpointr((esp+1))&&validpointr(esp+2)&&validpointr(esp+3)&&validpointr((void*)(*(esp+2))))){
+            exit(-1) ;
     }
-    else{
-      exit(-1) ;
+    for(char * cur = (char*)*(esp+2); cur< ((char*)*(esp+2))+(*(esp+3)); cur++)
+    {
+      if(!validpointr(cur))
+      {
+        exit (-1);
+      }
     }
+    f->eax = read (*(esp + 1), (void *) *(esp + 2), *(esp + 3));
     break;
 
     //handler for write
     case SYS_WRITE: 
-    if(validpointr((void*)(esp+1))&&validpointr((void*)(esp+2))&&validpointr((void*)(esp+3)))
-      f->eax = write(*(esp+1), (void *) *(esp+2), *(esp+3));
-    else
-      exit(-1) ;
+    if(!(validpointr((esp+1))&&validpointr(esp+2)&&validpointr(esp+3)&&validpointr((void*)(*(esp+2))))){
+            exit(-1) ;
+    }
+    for(char * cur = (char*)*(esp+2); cur< ((char*)*(esp+2))+(*(esp+3)); cur++)
+    {
+      if(!validpointr(cur))
+      {
+        exit (-1);
+      }
+    }
+          f->eax = write(*(esp+1), (void *) *(esp+2), *(esp+3));
    break;
 
     //handler for sys_seek
@@ -137,7 +149,8 @@ syscall_handler (struct intr_frame *f UNUSED)
     else 
       exit(-1);
     break;
-    default : exit(-1);
+    default :
+     exit(-1);
   }
 }
 
